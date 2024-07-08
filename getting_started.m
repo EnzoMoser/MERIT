@@ -34,10 +34,11 @@ figure(1)
 data_channel1 = [scan1(:, 1), scan2(:, 1)];
 channel1_magnitude = mag2db(abs(data_channel1));
 channel1_phase = unwrap(angle(data_channel1));
+times = ifft(frequencies);
 subplot(2, 1, 1);
-plot(frequencies, channel1_magnitude);
-xlabel('Frequency (Hz)');
-ylabel('Magnitude (dB)');
+plot(times, data_channel1);
+xlabel('Time (s)');
+ylabel('value');
 legend('Original Scan', 'Rotated Scan');
 title(sprintf('Channel (%d, %d) Magnitude', channel_names(1, :)));
 subplot(2, 1, 2);
@@ -55,7 +56,7 @@ figure(2)
 rotated_channel1_magnitude = mag2db(abs(signals(:, 1)));
 rotated_channel1_phase = unwrap(angle(signals(:, 1)));
 subplot(2, 1, 1);
-plot(frequencies, [channel1_magnitude, rotated_channel1_magnitude]);
+plot(times, [data_channel1, signals(:, 1)]);
 xlabel('Frequency (Hz)');
 ylabel('Magnitude (dB)');
 legend('Original Scan', 'Rotated Scan', 'Artefact removed');
