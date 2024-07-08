@@ -30,7 +30,6 @@ scan1 = dlmread('data/B0_P3_p000.csv');
 scan2 = dlmread('data/B0_P3_p036.csv');
 
 %% Plot the acquired scans.
-figure(1)
 data_channel1 = [scan1(:, 1), scan2(:, 1)];
 channel1_magnitude = mag2db(abs(data_channel1));
 channel1_phase = unwrap(angle(data_channel1));
@@ -48,11 +47,11 @@ ylabel('Phase (rad)');
 legend('Original Scan', 'Rotated Scan');
 title(sprintf('Channel (%d, %d) Phase', channel_names(1, :)));
 
+
 %% Perform rotation subtraction
 signals = scan1-scan2;
 
 %% Plot artefact removed: channel 1
-figure(2)
 rotated_channel1_magnitude = mag2db(abs(signals(:, 1)));
 rotated_channel1_phase = unwrap(angle(signals(:, 1)));
 subplot(2, 1, 1);
@@ -69,7 +68,6 @@ legend('Original Scan', 'Rotated Scan', 'Artefact removed');
 title(sprintf('Channel (%d, %d) Phase—Artefact removed', channel_names(1, :)));
 
 %% Generate imaging domain and visualise
-figure(3)
 [points, axes_] = merit.domain.hemisphere('radius', 7e-2, 'resolution', 2.5e-3);
 subplot(1, 1, 1);
 scatter3(points(:, 1), points(:, 2), points(:, 3), '+');
@@ -88,5 +86,4 @@ img = abs(merit.beamform(signals, frequencies, points, delays, ...
 %grid_ = merit.domain.img2grid(img, points, axes_{:});
 
 im_slice = merit.visualize.get_slice(img, points, axes_, 'z', 35e-3);
-figure(4)
 imagesc(axes_{1:2}, im_slice);
