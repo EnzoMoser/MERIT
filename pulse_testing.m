@@ -1,35 +1,13 @@
-% Getting started guide for MERIT
-% A basic guide to:
-%  - loading and visualising the sample data;
-%  - processing signals using the MERIT functions;
-%  - imaging with this toolbox.
+%Gaussian Pulse generator and testing
+% uses the MERIT functions
 
-%% Loading sample data
-% Details of the breast phantoms used to collect the sample data
-% are given in "Microwave Breast Imaging: experimental
-% tumour phantoms for the evaluation of new breast cancer diagnosis
-% systems", 2018 Biomed. Phys. Eng. Express 4 025036.
-% The antenna locations, frequency points and scattered signals
-% are given in the /data folder:
-%   antenna_locations.csv: the antenna locations in metres;
-%   frequencies.csv: the frequency points in Hertz;
-%   channel_names.csv: the descriptions of the channels in the scattered data;
-%   B0_P3_p000.csv: homogeneous breast phantom with an 11 mm diameter
-%     tumour located at (15, 0, 35) mm.
-%   B0_P5_p000.csv: homogeneous breast phantom with an 20 mm diameter
-%     tumour located at (15, 0, 30) mm.
-% For both phantoms, a second scan rotated by 36 degrees from the first
-% was acquired for artefact removal:
-% B0_P3_p036.csv and B0_P5_p036.csv respectively.
+%% Time and Frequency arrays
 
-frequencies = [-2e9:4.5e6:2e9]';
-antenna_locations = dlmread('data/antenna_locations.csv');
-channel_names = dlmread('data/channel_names.csv');
+
+frequencies = [0:4.5e6:4.5e9]';
 times = [0:10e-12:10e-9]';
-timesT = [0:10e-12:0.75e-9]';
 
-scan1 = dlmread('data/B0_P3_p000.csv');
-scan2 = dlmread('data/B0_P3_p036.csv');
+
 
 %% Gaussian Pulse generation
 % Parameters
@@ -43,39 +21,43 @@ sigma = 5e-11;         % Standard deviation of the Gaussian (seconds)
 % Generate the Gaussian pulse
 gausspulseT = exp(-(t/sigma).^2);
 gausspulse = gausspulseT';
+
+%use time to frequency shifter to get gaussian pulse in frequency domain.
 gausspulsefreq = merit.process.td2fd(gausspulse,times,frequencies);
 
 gausspulsefreq_magnitude = abs(gausspulsefreq);
-%% Plot the acquired scans.
+
+%modulate gausssian pulse with a 3 GHz sine wave
+sinewave_mod = sin(2*pi*3e+9*times);
+gausspulsemod = gausspulse .* sinewave_mod;
+
+gausspulsemodfreq = merit.process.td2fd(gausspulsemod,times,frequencies);
+gausspulsemodfreq_magnitude = abs(gausspulsemodfreq);
+%% Plot gaussian pulse
 figure(1)
 subplot(2, 1, 1);
 plot(times, gausspulse);
 xlabel('Time (s)');
 ylabel('value');
-legend('gaussian pulse time domian');
+title(sprintf('Gaussian Pulse Time Domain'));
 
 subplot(2, 1, 2);
 plot(frequencies, gausspulsefreq_magnitude);
 xlabel('Frequency (Hz)');
 ylabel('vaule');
-legend('gaussian pulse frequency domian');
+title(sprintf('Gaussian Pulse Frequency Domain'));
 
 
-%% Perform rotation subtraction
-signals = scan1-scan2;
+%% Plot modulated gaussian pulse
+figure(2)
+subplot(2, 1, 1);
+plot(times, gausspulsemod);
+xlabel('Time (s)');
+ylabel('value');
+title(sprintf('Modulated Gaussian Pulse Time Domain'));
 
-%% Plot artefact removed: channel 1
-%subplot(2, 1, 1);
-%plot(times, [data_channel1, signals(:,1)]);
-
-
-%xlabel('time');
-%ylabel('data');
-%title(sprintf('Channel (%d, %d) Magnitude—Artefact removed', channel_names(1, :)));
-%subplot(2, 1, 2);
-
-%plot(frequencies, [channel1_phase, rotated_channel1_phase]);
-%xlabel('Frequency (Hz)');
-%ylabel('Phase (rad)');
-%legend('Original Scan', 'Rotated Scan', 'Artefact removed');
-%title(sprintf('Channel (%d, %d) Phase—Artefact removed', channel_names(1, :)));
+subplot(2, 1, 2);
+plot(frequencies, gausspulsemodfreq_magnitude);
+xlabel('Frequency (Hz)');
+ylabel('vaule');
+title(sprintf('Modulated Gaussian Pulse Frequency Domain'));
