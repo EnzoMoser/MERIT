@@ -25,6 +25,7 @@
 frequencies = dlmread('data/frequencies.csv');
 antenna_locations = dlmread('data/antenna_locations.csv');
 channel_names = dlmread('data/channel_names.csv');
+times = [0:10e-12:4e-9]';
 
 scan1 = dlmread('data/B0_P3_p000.csv');
 scan2 = dlmread('data/B0_P3_p036.csv');
@@ -35,8 +36,10 @@ data_channel1 = [scan1(:, 1), scan2(:, 1)];
 channel1_magnitude = mag2db(abs(data_channel1));
 channel1_phase = unwrap(angle(data_channel1));
 subplot(2, 1, 1);
-times = ifft(frequencies);
-plot(times, data_channel1);
+
+data_channel1_td = merit.process.fd2td(data_channel1, frequencies, times);
+
+plot(times, data_channel1_td);
 xlabel('Time (s)');
 ylabel('data');
 legend('Original Scan', 'Rotated Scan');
@@ -55,8 +58,11 @@ signals = scan1-scan2;
 figure(2)
 rotated_channel1_magnitude = mag2db(abs(signals(:, 1)));
 rotated_channel1_phase = unwrap(angle(signals(:, 1)));
+
+signals_td = merit.process.fd2td(signals, frequencies, times);
+signals_td_lim = signals_td(:,1);
 subplot(2, 1, 1);
-plot(times, [data_channel1, signals(:,1)]);
+plot(times, [data_channel1_td, signals_td_lim]);
 xlabel('time');
 ylabel('data');
 legend('Original Scan', 'Rotated Scan', 'Artefact removed');
@@ -81,7 +87,7 @@ delays = merit.beamform.get_delays(channel_names, antenna_locations, ...
   'relative_permittivity', 8);
 
 %% Perform imaging
-img = abs(merit.beamform(signals, frequencies, points, delays, ...
+img = abs(merit.beamform(signals_td, times, points, delays, ...
         merit.beamformers.DAS));
 
 %% Convert to grid for image display
