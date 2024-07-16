@@ -22,12 +22,12 @@
 % was acquired for artefact removal:
 % B0_P3_p036.csv and B0_P5_p036.csv respectively.
 
-frequencies = dlmread('data/frequencies.csv');
-antenna_locations = dlmread('data/antenna_locations.csv');
-channel_names = dlmread('data/channel_names.csv');
+frequencies = dlmread('example_data/frequencies.csv');
+antenna_locations = dlmread('example_data/antenna_locations.csv');
+channel_names = dlmread('example_data/channel_names.csv');
 
-scan1 = dlmread('data/B0_P3_p000.csv');
-scan2 = dlmread('data/B0_P3_p036.csv');
+scan1 = dlmread('example_data/B0_P3_p000.csv');
+scan2 = dlmread('example_data/B0_P3_p036.csv');
 
 %% Plot the acquired scans.
 figure(1)
