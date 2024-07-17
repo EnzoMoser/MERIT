@@ -19,7 +19,7 @@ Features include:
     signal-to-clutter and signal-to-mean ratios;
  - and visualize image results in two and three dimensions.
 
-![example_3D_scan](.showcase/example_3D_scan.png)
+![example_3D_scan](/.showcase/example_3D_scan.png)
 
 # Examples
 
