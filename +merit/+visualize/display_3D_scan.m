@@ -1,27 +1,26 @@
-frequencies = dlmread('example_data/frequencies.csv');
-antenna_locations = dlmread('example_data/antenna_locations.csv');
-channel_names = dlmread('example_data/channel_names.csv');
+function display_3D_scan(grid_, options)
+arguments
+    grid_ (:, :, :)
 
-scan1 = dlmread('example_data/B0_P3_p000.csv');
-scan2 = dlmread('example_data/B0_P3_p036.csv');
+    % Specify figure to display
+    options.figure_number (1, 1) {mustBeNumeric} ...
+        = 0 % Default value is don't specify.
 
-signals = scan1-scan2;
+    % Shift the alpha profile.
+    % Higher opaque => numbers in the upper quartile of grid_ are more opaque.
+    % Lower opaque => only the coords with the largest values are opaque.
+    % The pixels will never be fully opaque, as they just look bad.
+    options.opaque (1, 1) {mustBeNumeric, mustBePositive, ...
+        mustBeLessThanOrEqual(options.opaque, 1)} ...
+        = 0.4 % Default value
+end
 
-[points, axes_] = merit.domain.hemisphere('radius', 7e-2, 'resolution', 2.5e-3);
-
-%% Calculate delays
-% merit.get_delays returns a function that calculates the delay
-%   to each point from every antenna.
-delays = merit.beamform.get_delays(channel_names, antenna_locations, ...
-  'relative_permittivity', 8);
-
-%% Perform imaging
-
-img = abs(merit.beamform(signals, frequencies, points, delays, ...
-        merit.beamformers.DAS));
-
-%% Convert to grid for image display
-grid_ = merit.domain.img2grid(img, points, axes_{:});
+if options.figure_number < 1
+    figure;
+else
+    figure(options.figure_number);
+end
+hold on;
 
 [lx, ly, lz] = size(grid_);
 
@@ -29,8 +28,6 @@ grid_ = merit.domain.img2grid(img, points, axes_{:});
 [x, y, z] = meshgrid(1:lx, 1:ly, 1:lz);
 
 % Plot the ball using slice
-figure(4);
-hold on;
 
 hz = slice(x, y, z, grid_, [], [], 1:lz);
 set(hz, 'EdgeColor', 'none');
@@ -66,13 +63,11 @@ md1 = Q1;
 md2 = Q3;
 ed = max_value;
 
-sep2 = 0.4;
+sep2 = options.opaque;
 
 sep1 = sep2 / 10;
 stps1 = ( ed - st) / ( md1 - st );
-
 stps2 = ( ed - st) / ( md2 - md1 );
-
 stps3 = ( ed - st) / ( ed - md2 );
 
 % Adjust alpha_map to reflect the relative differences
