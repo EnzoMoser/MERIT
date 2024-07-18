@@ -6,13 +6,18 @@ arguments
     options.figure_number (1, 1) {mustBeNumeric} ...
         = 0 % Default value is don't specify.
 
-    % Shift the alpha profile.
-    % Higher opaque => numbers in the upper quartile of grid_ are more opaque.
-    % Lower opaque => only the coords with the largest values are opaque.
-    % The pixels will never be fully opaque, as they just look bad.
-    options.opaque (1, 1) {mustBeNumeric, mustBePositive, ...
-        mustBeLessThanOrEqual(options.opaque, 1)} ...
+    % Shift the opacity of the upper quartile between 0 and 1.
+    % The pixels will/should never be fully opaque, as that just looks bad.
+    options.upper_opacity (1, 1) {mustBeNumeric, mustBePositive, ...
+        mustBeLessThanOrEqual(options.upper_opacity, 1)} ...
         = 0.4 % Default value
+
+    % Change the factor for the opacity of the lower quartile by a...
+    % factor of the upper_opactiy
+    % lower_opacity = upper_opacity * lower_opacity_factor
+    options.lower_opacity_factor (1, 1) {mustBeNumeric, mustBePositive, ...
+        mustBeLessThanOrEqual(options.lower_opacity_factor, 1)} ...
+        = 0.1 % Default value
 end
 
 if options.figure_number < 1
@@ -50,10 +55,11 @@ grid on; % Turn on the grid
 % Add transparency
 alpha('color'); % Use color data for transparency
 
-max_value = max(grid_(grid_ ~= 0 & ~isnan(grid_)));
-min_value = min(grid_(grid_ ~= 0 & ~isnan(grid_)));
-
 vector_grid = grid_(grid_ ~= 0 & ~isnan(grid_));
+
+max_value = max(vector_grid);
+min_value = min(vector_grid);
+
 Q1 = quantile(vector_grid, 0.25);
 Q3 = quantile(vector_grid, 0.75);
 
@@ -63,9 +69,9 @@ md1 = Q1;
 md2 = Q3;
 ed = max_value;
 
-sep2 = options.opaque;
+sep2 = options.upper_opacity;
 
-sep1 = sep2 / 10;
+sep1 = sep2 * options.lower_opacity_factor;
 stps1 = ( ed - st) / ( md1 - st );
 stps2 = ( ed - st) / ( md2 - md1 );
 stps3 = ( ed - st) / ( ed - md2 );
