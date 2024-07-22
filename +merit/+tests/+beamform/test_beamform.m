@@ -60,10 +60,10 @@ function [pulse, pulse_fd] = DG(freq, tau, time_axis, freq_axis)
 end
 
 function [fd, fa, chs, ants] = get_data()
-  scan1 = dlmread('data/B0_P3_p000.csv');
-  scan2 = dlmread('data/B0_P3_p036.csv');
+  scan1 = dlmread('example_data/B0_P3_p000.csv');
+  scan2 = dlmread('example_data/B0_P3_p036.csv');
   fd = scan1-scan2;
-  fa = dlmread('data/frequencies.csv');
-  chs = dlmread('data/channel_names.csv');
-  ants = dlmread('data/antenna_locations.csv');
+  fa = dlmread('example_data/frequencies.csv');
+  chs = dlmread('example_data/channel_names.csv');
+  ants = dlmread('example_data/antenna_locations.csv');
 end

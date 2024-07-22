@@ -1,11 +1,11 @@
-frequencies = dlmread('data/frequencies.csv');
-antenna_locations = dlmread('data/antenna_locations.csv');
-channel_names = dlmread('data/channel_names.csv');
+frequencies = dlmread('example_data/frequencies.csv');
+antenna_locations = dlmread('example_data/antenna_locations.csv');
+channel_names = dlmread('example_data/channel_names.csv');
 
-scan_B10E_P3_1 = dlmread('data/B10E_P3_p000.csv');
-scan_B10E_P3_2 = dlmread('data/B10E_P3_p036.csv');
-scan_B10E_P5_1 = dlmread('data/B10E_P5_p000.csv');
-scan_B10E_P5_2 = dlmread('data/B10E_P5_p036.csv');
+scan_B10E_P3_1 = dlmread('example_data/B10E_P3_p000.csv');
+scan_B10E_P3_2 = dlmread('example_data/B10E_P3_p036.csv');
+scan_B10E_P5_1 = dlmread('example_data/B10E_P5_p000.csv');
+scan_B10E_P5_2 = dlmread('example_data/B10E_P5_p036.csv');
 
 B10E_P3 = scan_B10E_P3_1 - scan_B10E_P3_2;
 B10E_P5 = scan_B10E_P5_1 - scan_B10E_P5_2;
