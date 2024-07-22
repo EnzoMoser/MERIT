@@ -56,7 +56,7 @@ legend('Signal');
 %   to each point from every antenna.
 
 channel_one = 1:number_antennas;
-channel_two = mod ( channel_one+12, number_antennas+1); % The receiving antenna is 60 degrees ahead of the transmitting antenna
+channel_two = mod ( channel_one+11, number_antennas) + 1; % The receiving antenna is 60 degrees ahead of the transmitting antenna
 channel_names = permute ( [ channel_one; channel_two ], [2, 1] );
 
 delays = merit.beamform.get_delays(channel_names, antenna_locations, ...
