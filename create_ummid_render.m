@@ -1,21 +1,31 @@
-scan_num = 280;
-
-scan_data = load('../um_bmid/datasets/gen-two/clean/fd_data_s21_adi.mat');
-% Extract the data array from the struct dtype it is stored in
-scanDataFieldName = fieldnames(scan_data);
-scan_data = getfield(scan_data, scanDataFieldName{1}); %#ok<GFLD>
+scan_num = 45;
 
 metadata = load('../um_bmid/datasets/gen-two/clean/md_list_s21_adi.mat');
 % Extract the metadata array from the struct dytpe it is stored in
 metadataFieldName = fieldnames(metadata);
 metadata = getfield(metadata, metadataFieldName{1}); %#ok<GFLD>
 
-signals = squeeze(scan_data(scan_num, :, :));
+scan_data = load('../um_bmid/datasets/gen-two/clean/fd_data_s11_adi.mat');
+% Extract the data array from the struct dtype it is stored in
+scanDataFieldName = fieldnames(scan_data);
+scan_data = getfield(scan_data, scanDataFieldName{1}); %#ok<GFLD>
+
+scan1 = squeeze(scan_data(scan_num, :, :));
+
+scan_data = load('../um_bmid/datasets/gen-two/clean/fd_data_s21_adi.mat');
+% Extract the data array from the struct dtype it is stored in
+scanDataFieldName = fieldnames(scan_data);
+scan_data = getfield(scan_data, scanDataFieldName{1}); %#ok<GFLD>
+
+scan2 = squeeze(scan_data(scan_num, :, :));
+
+signals = scan1 + scan2;
+
 frequencies = linspace( 1e9, 8e9, size(signals, 1) );
 radius = metadata{scan_num}.ant_rad * 1e-2; % The radius of the scan.
 number_antennas = size(signals, 2); % The number of antenna locations.
 
-antenna_angles = (linspace(0, (355 / 360) * 2 * pi, number_antennas));
+antenna_angles = (linspace(0, (355 / 360) * 2 * pi, number_antennas)); % Only works for number_antennas=72
 antenna_locations = permute ( [ ( cos(antenna_angles) * radius ); ( sin(antenna_angles) * radius ) ], [2,1] );
 
 %% Plot the acquired scans.
@@ -56,6 +66,6 @@ img = abs(merit.beamform(signals, frequencies, points, delays, ...
 % Convert to grid for image display
 grid_ = merit.domain.img2grid(img, points, axes_{:});
 
-%im_slice = merit.visualize.get_slice(img, points, axes_);
 figure
 imagesc(axes_{:}, grid_);
+axis equal
