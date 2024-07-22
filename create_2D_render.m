@@ -1,3 +1,16 @@
+% Not accurate, as it's squashing 3D data into 2D.
+
+if ~exist('frequencies', 'var') % Check if frequencies exist.
+    frequencies = dlmread('example_data/frequencies.csv');
+    antenna_locations = dlmread('example_data/antenna_locations.csv');
+    channel_names = dlmread('example_data/channel_names.csv');
+    
+    scan1 = dlmread('example_data/B0_P3_p000.csv'); %#ok<*DLMRD>
+    scan2 = dlmread('example_data/B0_P3_p036.csv');
+    
+    signals = scan1-scan2;
+end
+
 % Generate imaging domain
 [points, axes_] = merit.domain.hemisphere('radius', 7e-2, 'resolution', 2.5e-3, 'no_z', true);
 
