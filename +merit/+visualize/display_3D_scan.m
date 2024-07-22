@@ -1,5 +1,5 @@
 function display_3D_scan(grid_, options)
-% Display a 3D render of an (:, :, :) grid.
+% Display a 3D render of a (:, :, :) grid.
 % The density is relative to the highest and lowest numbers.
 arguments
     % Matrix containing the data to render.
@@ -11,22 +11,21 @@ arguments
     options.figure_number (1, 1) {mustBeGreaterThanOrEqual(options.figure_number, 0)} ...
         = 0
 
-    % Change the factor (between 0 and 1) for the max_opactiy of...
-    % numbers from the upper quartile to the 90th quartile...
+    % Shift the max_opacity (between 0 and 1) for numbers between the ...
+    % upper quartile and the 90th quartile.
     % ( Default is 1 ).
     options.upper_opacity (1, 1)...
         {mustBeInRange(options.upper_opacity, 0, 1, 'exclude-lower')} ...
         = 1
 
-    % Shift the max_opacity for numbers between the lower and...
-    % upper quartile (between 0 and 1).
-    % The pixels will/should never be fully opaque, as that just looks bad.
-    options.middle_opacity_factor (1, 1) ...% Default value
+    % Change the factor (between 0 and 1) for the max_opacity for numbers...
+    % between the lower and upper quartile, relative to upper_opacity.
+    options.middle_opacity_factor (1, 1) ...
         {mustBeInRange(options.middle_opacity_factor, 0, 1, 'exclude-lower')} ...
         = 0.4 % Default value
 
     % Change the factor (between 0 and 1) for the max_opacity of...
-    % numbers below the lower quartile by a factor of the upper_opactiy.
+    % numbers below the lower quartile by a factor of the middle_opactiy.
     % max_lower_opacity = middle_opacity * lower_opacity_factor
     options.lower_opacity_factor (1, 1) ...
         {mustBeInRange(options.lower_opacity_factor, 0, 1, 'exclude-lower')} ...
@@ -78,31 +77,32 @@ min_value = min(vector_grid);
 
 Q1 = quantile(vector_grid, 0.25);
 Q3 = quantile(vector_grid, 0.75);
-Q99 = quantile(vector_grid, 0.90);
+Q90 = quantile(vector_grid, 0.90);
 
 % Determine the values at specific steps
-st = min_value;
-md1 = Q1;
-md2 = Q3;
-md3 = Q99;
-ed = max_value;
+v_start = min_value;
+v_mid1 = Q1;
+v_mid2 = Q3;
+v_mid3 = Q90;
+v_end = max_value;
 
-sep3 = options.upper_opacity;
-sep2 = sep3 * options.middle_opacity_factor;
-sep1 = sep2 * options.lower_opacity_factor;
-full_diff = ( ed - st);
+upper_opacity = options.upper_opacity;
+middle_opacity = upper_opacity * options.middle_opacity_factor;
+lower_opacity = middle_opacity * options.lower_opacity_factor;
 
-stps1 = full_diff / ( md1 - st );
-stps2 = full_diff / ( md2 - md1 );
-stps3 = full_diff / ( md3 - md2 );
-stps4 = full_diff / ( ed - md3 );
+
+full_diff = ( v_end - v_start);
+stps1 = full_diff / ( v_mid1 - v_start );
+stps2 = full_diff / ( v_mid2 - v_mid1 );
+stps3 = full_diff / ( v_mid3 - v_mid2 );
+stps4 = full_diff / ( v_end - v_mid3 );
 
 % Adjust alpha_map to reflect the relative differences
 alpha_map = [ ...
-    linspace( 0.01, sep1, stps1 ) ...
-    linspace( sep1, sep2, stps2 )  ...
-    linspace( sep2, sep3, stps3 )  ...
-    linspace( sep3, 1, stps4 ) ...
+    linspace( 0.01, lower_opacity, stps1 ) ...
+    linspace( lower_opacity, middle_opacity, stps2 )  ...
+    linspace( middle_opacity, upper_opacity, stps3 )  ...
+    linspace( upper_opacity, 1, stps4 ) ...
     ];
 
 % Apply the custom alpha map

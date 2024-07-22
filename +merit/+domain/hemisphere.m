@@ -11,6 +11,7 @@ function [points, axes_] = hemisphere(varargin)
   addOptional(p, 'x', [], validate_axis);
   addOptional(p, 'y', [], validate_axis);
   addOptional(p, 'z', [], validate_axis);
+  addOptional(p, 'no_z', false);
   parse(p, varargin{:});
   resolution = p.Results.resolution;
   if numel(resolution) == 1
@@ -21,19 +22,33 @@ function [points, axes_] = hemisphere(varargin)
 
   full_axis = @(r) -radius_:r:radius_;
   half_axis = @(r) 0:r:radius_;
-  axes_ = {p.Results.x, p.Results.y, p.Results.z};
-  if isempty(axes_{1})
-    axes_{1} = full_axis(resolution(1));
-  end
-  if isempty(axes_{2})
-    axes_{2} = full_axis(resolution(2));
-  end
-  if isempty(axes_{3})
-    axes_{3} = half_axis(resolution(3));
-  end
 
-  [Xs, Ys, Zs] = ndgrid(axes_{:});
-  area_ = Xs.^2 + Ys.^2+Zs.^2 <= p.Results.radius.^2;
+  if p.Results.no_z == false
+      axes_ = {p.Results.x, p.Results.y, p.Results.z};
+      if isempty(axes_{1})
+        axes_{1} = full_axis(resolution(1));
+      end
+      if isempty(axes_{2})
+        axes_{2} = full_axis(resolution(2));
+      end
+      if isempty(axes_{3})
+        axes_{3} = half_axis(resolution(3));
+      end
+
+      [Xs, Ys, Zs] = ndgrid(axes_{:});
+      area_ = Xs.^2 + Ys.^2+Zs.^2 <= p.Results.radius.^2;
+  else
+      axes_ = {p.Results.x, p.Results.y};
+      if isempty(axes_{1})
+        axes_{1} = full_axis(resolution(1));
+      end
+      if isempty(axes_{2})
+        axes_{2} = full_axis(resolution(2));
+      end
+
+      [Xs, Ys] = ndgrid(axes_{:});
+      area_ = Xs.^2 + Ys.^2 <= p.Results.radius.^2;
+  end
 
   points = merit.beamform.imaging_domain(area_, axes_{:});
 end
