@@ -19,12 +19,14 @@ scan_data = getfield(scan_data, scanDataFieldName{1}); %#ok<GFLD>
 
 scan2 = squeeze(scan_data(scan_num, :, :));
 
-signals = scan1 + scan2;
+signals = [ scan1 , scan2 ];
+signals = scan1;
 
-frequencies = linspace( 1e9, 8e9, size(signals, 1) );
+frequencies = linspace( 1e9, 8e9, size(scan1, 1) );
 radius = metadata{scan_num}.ant_rad * 1e-2; % The radius of the scan.
-number_antennas = size(signals, 2); % The number of antenna locations.
+number_antennas = size(scan1, 2); % The number of antenna locations.
 
+%antenna_angles = (linspace(0, (1 - (1/number_antennas) ) * 2 * pi, number_antennas)); % If number_antennas = 72, then steps of 5 from 0 to 355 (but in radians)
 antenna_angles = (linspace(0, (355 / 360) * 2 * pi, number_antennas)); % Only works for number_antennas=72
 antenna_locations = permute ( [ ( cos(antenna_angles) * radius ); ( sin(antenna_angles) * radius ) ], [2,1] );
 
@@ -53,8 +55,9 @@ legend('Signal');
 % merit.get_delays returns a function that calculates the delay
 %   to each point from every antenna.
 
-one_channel = 1:number_antennas;
-channel_names = permute ( [ one_channel; one_channel ], [2, 1] );
+channel_one = 1:number_antennas;
+channel_two = mod ( channel_one+12, number_antennas+1); % The receiving antenna is 60 degrees ahead of the transmitting antenna
+channel_names = permute ( [ channel_one; channel_two ], [2, 1] );
 
 delays = merit.beamform.get_delays(channel_names, antenna_locations, ...
   'relative_permittivity', 8);
