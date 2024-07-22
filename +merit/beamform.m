@@ -49,8 +49,8 @@ function [img, sigs] = beamform(signals, axis_, points, delay, image_, varargin)
   for r = 1:points_run:nPoints,
     for d = 1:numel(delay)
       rng = r:min(nPoints, r+points_run-1);
-      img(rng, d, :) = image_(window(...
-        merit.process.delay(signals, delay{d}(points(rng, :)), axis_)));
+      delayed_signals = merit.process.delay(signals, delay{d}(points(rng, :)), axis_);
+      img(rng, d, :) = image_(window(delayed_signals));
     end
   end
 

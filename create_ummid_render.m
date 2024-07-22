@@ -19,35 +19,33 @@ scan_data = getfield(scan_data, scanDataFieldName{1}); %#ok<GFLD>
 
 scan2 = squeeze(scan_data(scan_num, :, :));
 
-signals = [ scan1 , scan2 ];
-signals = scan1;
+signals = scan1 + scan2;
 
 frequencies = linspace( 1e9, 8e9, size(scan1, 1) );
 radius = metadata{scan_num}.ant_rad * 1e-2; % The radius of the scan.
 number_antennas = size(scan1, 2); % The number of antenna locations.
 
-%antenna_angles = (linspace(0, (1 - (1/number_antennas) ) * 2 * pi, number_antennas)); % If number_antennas = 72, then steps of 5 from 0 to 355 (but in radians)
-antenna_angles = (linspace(0, (355 / 360) * 2 * pi, number_antennas)); % Only works for number_antennas=72
+antenna_angles = (linspace(0, (1 - (1/number_antennas) ) * 2 * pi, number_antennas)); % If number_antennas = 72, then steps of 5 from 0 to 355 (but in radians)
 antenna_locations = permute ( [ ( cos(antenna_angles) * radius ); ( sin(antenna_angles) * radius ) ], [2,1] );
 
 %% Plot the acquired scans.
 figure;
-data_channel1 = signals(:, 1);
+data_channel1 = [ scan1(:, 1), scan2(:, 1), signals(:, 1)];
 channel1_magnitude = mag2db(abs(data_channel1));
 channel1_phase = unwrap(angle(data_channel1));
 subplot(2, 1, 1);
 plot(frequencies, channel1_magnitude);
 xlabel('Frequency (Hz)');
 ylabel('Magnitude (dB)');
-legend('Signal');
-%title(sprintf('Channel (%d, %d) Magnitude', channel_names(1, :)));
+legend('s11', 's21', 'signals (s11+s21)');
+title(sprintf('Channel (%d, %d) Magnitude', channel_names(1, :)));
 subplot(2, 1, 2);
 plot(frequencies, channel1_phase);
 xlabel('Frequency (Hz)');
 ylabel('Phase (rad)');
-legend('Signal');
-%title(sprintf('Channel (%d, %d) Phase', channel_names(1, :)));
-
+legend('s11', 's21', 'signals (s11+s21)');
+title(sprintf('Channel (%d, %d) Phase', channel_names(1, :)));
+% 
 % Generate imaging domain
 [points, axes_] = merit.domain.hemisphere('radius', radius, 'resolution', 2.5e-3, 'no_z', true);
 
@@ -63,8 +61,8 @@ delays = merit.beamform.get_delays(channel_names, antenna_locations, ...
   'relative_permittivity', 8);
 
 % Perform imaging
-img = abs(merit.beamform(signals, frequencies, points, delays, ...
-        merit.beamformers.DAS));
+beamformer = merit.beamformers.DAS;
+img = abs(merit.beamform(signals, frequencies, points, delays, beamformer));
 
 % Convert to grid for image display
 grid_ = merit.domain.img2grid(img, points, axes_{:});
