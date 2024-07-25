@@ -1,6 +1,7 @@
 function display_3D_scan(grid_, options)
-% Display a 3D render of a (:, :, :) grid.
+% Display a 3D colormap render of a (:, :, :) grid.
 % The density is relative to the highest and lowest numbers.
+% Higher density means higher opacity.
 arguments
     % Matrix containing the data to render.
     grid_ (:, :, :) {mustBeNumeric}
@@ -11,6 +12,8 @@ arguments
     options.figure_number (1, 1) {mustBeGreaterThanOrEqual(options.figure_number, 0)} ...
         = 0
 
+    % Numbers above the 90th percentile are always set to full opacity.
+
     % Shift the max_opacity (between 0 and 1) for numbers between the ...
     % upper quartile and the 90th quartile.
     % ( Default is 1 ).
@@ -20,19 +23,21 @@ arguments
 
     % Change the factor (between 0 and 1) for the max_opacity for numbers...
     % between the lower and upper quartile, relative to upper_opacity.
+    % middle_opacity = middle_opacity_factor * upper_opacity
     options.middle_opacity_factor (1, 1) ...
         {mustBeInRange(options.middle_opacity_factor, 0, 1, 'exclude-lower')} ...
         = 0.4 % Default value
 
     % Change the factor (between 0 and 1) for the max_opacity of...
-    % numbers below the lower quartile by a factor of the middle_opactiy.
-    % max_lower_opacity = middle_opacity * lower_opacity_factor
+    % numbers below the lower quartile, relative to middle_opactiy.
+    % max_lower_opacity = middle_opacity * lower_opacity_factor.
+    % lower_opacity = lower_opacity_factor * middle_opacity
     options.lower_opacity_factor (1, 1) ...
         {mustBeInRange(options.lower_opacity_factor, 0, 1, 'exclude-lower')} ...
         = 0.1
     
     % Specify the colormap. Can take a string or a (:, 3) matrix
-    options.colormap_ = "jet"
+    options.colormap = "jet"
 end
 
 if options.figure_number < 1
@@ -58,7 +63,7 @@ set(hy, 'EdgeColor', 'none');
 hx = slice(x, y, z, grid_, 1:lx, [], []);
 set(hx, 'EdgeColor', 'none');
 
-colormap(options.colormap_);
+colormap(options.colormap);
 colorbar; % Show color bar to indicate density values
 xlabel('X-axis');
 ylabel('Y-axis');

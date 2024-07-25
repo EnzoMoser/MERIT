@@ -34,7 +34,7 @@ scan_data = getfield(scan_data, scanDataFieldName{1}); %#ok<GFLD>
 scan_data = scan_data(1:8, :, 1:2); % Limit it to 7 scans and 2 antennas
 
 %% Setup frequencies
-frequencies = linspace( 1e9, 8e9, size(scan_data, 2) ); % Frequencies
+frequencies = linspace( 1e9, 9e9, size(scan_data, 2) ); % Frequencies
 % Shrink the frequencies for scan_data
 frequency_ids = frequencies >=2e9; % Only include frequencies above this number.
 frequencies = frequencies(frequency_ids);
@@ -60,7 +60,7 @@ cropped_signal = org_signal - adi_signal;
 
 %% Plot the acquired scans.
 figure;
-data_channel1 = [ org_signal(:, 1), cropped_signal(:, 1 ) ];
+data_channel1 = [ org_signal(:, 1), cropped_signal(:, 1) ] ;
 channel1_magnitude = mag2db(abs(data_channel1));
 channel1_phase = unwrap(angle(data_channel1));
 subplot(2, 1, 1);
@@ -115,50 +115,51 @@ roi_rad = 8e-2; % The radius of information is 8cm.
 % Generate imaging domain
 [points, axes_] = merit.domain.hemisphere('radius', roi_rad, 'resolution', 2e-3, 'no_z', true);
 
-% pixel_size = size(points, 1);
-% pixel_delay_dis = zeros(number_antennas, pixel_size);
-% 
-% for a_loc = 1:number_antennas
-% 
-%     x_diff = (points(:, 1) - squeeze( antenna_locations(a_loc, 1) ) );
-%     y_diff = (points(:, 2) - squeeze( antenna_locations(a_loc, 2) )  );
-% 
-%     pix_dis = sqrt( x_diff.^2 + y_diff.^2 );
-% 
-%     pixel_delay_dis(a_loc, :) = pix_dis;
-% 
-% end
-% pixel_delay_time = pixel_delay_dis ./ prop_speed;
-% 
-% % Apply extra time delay for monostatic. Constant taken from Reimer.
-% pixel_delay_time = pixel_delay_time + 0.19e-9;
-% phase_factor = exp(-2i * pi * pixel_delay_time);
+pixel_size = size(points, 1);
+pixel_delay_dis = zeros(number_antennas, pixel_size);
 
-% p_size = size(points, 1);
+for a_loc = 1:number_antennas
+
+    x_diff = (points(:, 1) - squeeze( antenna_locations(a_loc, 1) ) );
+    y_diff = (points(:, 2) - squeeze( antenna_locations(a_loc, 2) )  );
+
+    pix_dis = sqrt( x_diff.^2 + y_diff.^2 );
+
+    pixel_delay_dis(a_loc, :) = pix_dis;
+
+end
+pixel_delay_time = pixel_delay_dis ./ prop_speed;
+
+% Apply extra time delay for monostatic. Constant taken from Reimer.
+pixel_delay_time = pixel_delay_time + 0.19e-9;
+phase_factor = exp(-2i * pi * pixel_delay_time);
+
+p_size = size(points, 1);
+
+das_reconstruction = zeros([p_size 1]);
+for point = 1:p_size
+    delayed_signal = zeros(size(cropped_signal));
+    for i = 1:size(phase_factor, 1)
+        delayed_signal(:, i) = cropped_signal(:, i) * phase_factor(i, point);
+    end
+    das_reconstruction(point) = shiftdim(sum(sum(delayed_signal, 2).^2, 1), 2);
+end
+img = abs(das_reconstruction);
+
+% channel_one = 1:number_antennas;
+% %channel_two = mod ( channel_one+11, number_antennas) + 1; % The receiving antenna is 60 degrees ahead of the transmitting antenna
+% channel_names = permute ( [ channel_one; channel_one ], [2, 1] );
 % 
-% das_reconstruction = zeros([p_size 1]);
-% for point = 1:p_size
-%     delayed_signal = zeros(size(cropped_signal));
-%     for i = 1:size(phase_factor, 1)
-%         delayed_signal(:, i) = cropped_signal(:, i) .* phase_factor(i, point);
-%     end
-%     das_reconstruction(point) = shiftdim(sum(sum(delayed_signal, 2).^2, 1), 2);
-% end
-
-channel_one = 1:number_antennas;
-%channel_two = mod ( channel_one+11, number_antennas) + 1; % The receiving antenna is 60 degrees ahead of the transmitting antenna
-channel_names = permute ( [ channel_one; channel_one ], [2, 1] );
-
-% Calculate delays
-% merit.get_delays returns a function that calculates the delay
-%   to each point from every antenna.
-
-delays = merit.beamform.get_delays(channel_names, antenna_locations, ...
-  'relative_permittivity', av_perm);
-
-% Perform imaging
-beamformer = merit.beamformers.DAS;
-img = abs(merit.beamform(org_signal, frequencies, points, delays, beamformer));
+% % Calculate delays
+% % merit.get_delays returns a function that calculates the delay
+% %   to each point from every antenna.
+% 
+% delays = merit.beamform.get_delays(channel_names, antenna_locations, ...
+%   'relative_permittivity', av_perm);
+% 
+% % Perform imaging
+% beamformer = merit.beamformers.DAS;
+% img = abs(merit.beamform(org_signal, frequencies, points, delays, beamformer));
 
 % Convert to grid for image display
 grid_ = merit.domain.img2grid(img, points, axes_{:});
