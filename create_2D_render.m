@@ -20,7 +20,7 @@ end
 %   to each point from every antenna.
 delays = merit.beamform.get_delays(channel_names, antenna_locations(:, 1:2), ...
   relative_permittivity=8);
-who
+
 % Perform imaging
 img = abs(merit.beamform(signals, frequencies, points, delays, ...
         merit.beamformers.DAS));
