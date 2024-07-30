@@ -31,7 +31,7 @@ scanDataFieldName = fieldnames(scan_data);
 scan_data = getfield(scan_data, scanDataFieldName{1}); %#ok<GFLD>
 
 %% Cut extra data from scan_data
-scan_data = scan_data(1:8, :, 1:2); % Limit it to 7 scans and 2 antennas
+scan_data = scan_data(1:8, :, :); % Limit it to 7 scans and 2 antennas
 
 %% Setup frequencies
 frequencies = linspace( 1e9, 9e9, size(scan_data, 2) ); % Frequencies
@@ -112,39 +112,84 @@ antenna_locations = permute ( [ ( cos(antenna_angles) * sig_rad ); ( sin(antenna
 
 roi_rad = 8e-2; % The radius of information is 8cm.
 
-% Generate imaging domain
-[points, axes_] = merit.domain.hemisphere('radius', roi_rad, 'resolution', 2e-3, 'no_z', true);
+m_size = 150;
+%Define the x/y points on each axis
+xs = linspace(-roi_rad, roi_rad, m_size);
+ys = linspace(roi_rad, -roi_rad, m_size);
 
-pixel_size = size(points, 1);
-pixel_delay_dis = zeros(number_antennas, pixel_size);
+% Cast these to 2D for ease later
+[ pix_xs, pix_ys ] = meshgrid(xs, ys);
 
-for a_loc = 1:number_antennas
+% Get the ant x/y positions
+ant_xs = antenna_locations(:, 2);
+ant_ys = antenna_locations(:, 1);
 
-    x_diff = (points(:, 1) - squeeze( antenna_locations(a_loc, 1) ) );
-    y_diff = (points(:, 2) - squeeze( antenna_locations(a_loc, 2) )  );
+% Init array for storing pixel time-delays
+p_ds = zeros([number_antennas, m_size, m_size]);
 
-    pix_dis = sqrt( x_diff.^2 + y_diff.^2 );
+for a_pos = 1:number_antennas  % For each antenna position
 
-    pixel_delay_dis(a_loc, :) = pix_dis;
-
+    % Find x/y position differences of each pixel from antenna
+    x_diffs = pix_xs - ant_xs(a_pos);
+    y_diffs = pix_ys - ant_ys(a_pos);
+    
+    % Calculate one-way time-delay of propagation from antenna to
+    % each pixel
+    p_ds(a_pos, :, :) = sqrt(x_diffs.^2 + y_diffs.^2);
 end
-pixel_delay_time = pixel_delay_dis ./ prop_speed;
+
+pixel_delay_time = p_ds ./ prop_speed; % Convert distance delay to time delay, relative to permittivity.
 
 % Apply extra time delay for monostatic. Constant taken from Reimer.
 pixel_delay_time = pixel_delay_time + 0.19e-9;
-phase_factor = exp(-2i * pi * pixel_delay_time);
 
-p_size = size(points, 1);
+% Assuming recon_fs is a vector of size [N, 1]
+% and pix_ts is a 3D array of size [72, 150, 150]
 
-das_reconstruction = zeros([p_size 1]);
-for point = 1:p_size
-    delayed_signal = zeros(size(cropped_signal));
-    for i = 1:size(phase_factor, 1)
-        delayed_signal(:, i) = cropped_signal(:, i) * phase_factor(i, point);
-    end
-    das_reconstruction(point) = shiftdim(sum(sum(delayed_signal, 2).^2, 1), 2);
-end
-img = abs(das_reconstruction);
+recon_fs = frequencies(:);
+pix_ts = pixel_delay_time;
+
+phase_fac = exp(-1i * 2 * pi * recon_fs .* reshape(pix_ts, 1, size(pix_ts, 1), size(pix_ts, 2), size(pix_ts, 3)));
+
+% Convert adi_cal_cropped to have singleton dimensions for broadcasting
+adi_cal_cropped_expanded = reshape(cropped_signal, size(cropped_signal, 1), size(cropped_signal, 2), 1, 1);
+
+% Perform the element-wise multiplication and summation using implicit expansion
+das_adi_recon = sum(sum(adi_cal_cropped_expanded .* phase_fac.^(-2), 1), 2);
+
+% Squeeze the result to remove singleton dimensions
+das_adi_recon = squeeze(das_adi_recon);
+
+img = abs(das_adi_recon);
+
+img_to_plt = img .* ones(size(img), "like", img);
+
+% Find the distance from each pixel to the center of the model space
+pix_dist_from_center = sqrt(pix_xs.^2 + pix_ys.^2);
+
+% Get the region of interest as all the pixels inside the
+% circle-of-interest
+roi = false(m_size);
+in_roi(pix_dist_from_center < roi_rad) = true;
+
+% Set the pixels outside the antenna trajectory to NaN
+img_to_plt( ~in_roi ) = nan;
+
+% Bounds for x/y axes ticks in plt
+tick_bounds = [-roi_rad, roi_rad, -roi_rad, roi_rad];
+
+figure()  % Make the figure window
+hold on
+
+axes_{1} = xs;
+axes_{2} = ys;
+
+imagesc(axes_{:}, img_to_plt);
+colormap("jet");
+colorbar
+axis equal
+hold off
+
 
 % channel_one = 1:number_antennas;
 % %channel_two = mod ( channel_one+11, number_antennas) + 1; % The receiving antenna is 60 degrees ahead of the transmitting antenna
@@ -162,8 +207,8 @@ img = abs(das_reconstruction);
 % img = abs(merit.beamform(org_signal, frequencies, points, delays, beamformer));
 
 % Convert to grid for image display
-grid_ = merit.domain.img2grid(img, points, axes_{:});
+%grid_ = merit.domain.img2grid(img, points, axes_{:});
 
-figure
-imagesc(axes_{:}, grid_);
-axis equal
+%figure
+%imagesc(axes_{:}, grid_);
+%axis equal
