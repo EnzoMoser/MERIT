@@ -76,7 +76,7 @@ title(sprintf('Channel (%d, %d) Phase—Artefact removed', channel_names(1, :)))
 
 %% Generate imaging domain and visualise
 figure(3)
-[points, axes_] = merit.domain.hemisphere('radius', 7e-2, 'resolution', 2.5e-3);
+[points, axes_] = merit.domain.hemisphere(radius=7e-2, resolution=2.5e-3);
 subplot(1, 1, 1);
 scatter3(points(:, 1), points(:, 2), points(:, 3), '+');
 
@@ -84,7 +84,7 @@ scatter3(points(:, 1), points(:, 2), points(:, 3), '+');
 % merit.get_delays returns a function that calculates the delay
 %   to each point from every antenna.
 delays = merit.beamform.get_delays(channel_names, antenna_locations, ...
-  'relative_permittivity', 8);
+  relative_permittivity=8);
 
 %% Perform imaging
 img = abs(merit.beamform(signals_td, times, points, delays, ...
@@ -93,6 +93,6 @@ img = abs(merit.beamform(signals_td, times, points, delays, ...
 %% Convert to grid for image display
 %grid_ = merit.domain.img2grid(img, points, axes_{:});
 
-im_slice = merit.visualize.get_slice(img, points, axes_, 'z', 35e-3);
+im_slice = merit.visualize.get_slice(img, points, axes_, z=35e-3);
 figure(4)
 imagesc(axes_{1:2}, im_slice);
