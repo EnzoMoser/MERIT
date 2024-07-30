@@ -131,7 +131,6 @@ breast_model(pix_dist_from_tum < tum_rad) = tum_permitivity;
 vac_speed = 3e8;
 
 prop_speed = mean( ( vac_speed ./ sqrt( breast_model(full_in_roi) ) ), "all" );
-% 288739680.6368426; % Ripped it from the Python calculation
 
 number_antennas = size(scan_data, 3); % The number of antenna locations.
 
