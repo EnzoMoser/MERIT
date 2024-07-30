@@ -9,13 +9,13 @@ scan2 = dlmread('example_data/B0_P3_p036.csv');
 
 signals = scan1-scan2;
 
-[points, axes_] = merit.domain.hemisphere('radius', 7e-2, 'resolution', 2.5e-3);
+[points, axes_] = merit.domain.hemisphere(resolution=2.5e-3, radius=7e-2);
 
 %% Calculate delays
 % merit.get_delays returns a function that calculates the delay
 %   to each point from every antenna.
 delays = merit.beamform.get_delays(channel_names, antenna_locations, ...
-  'relative_permittivity', 8);
+  relative_permittivity=8);
 
 %% Perform imaging
 

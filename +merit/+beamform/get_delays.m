@@ -1,9 +1,12 @@
-function [calculate_time] = get_delays(channels, antennas, varargin)
+function [calculate_time] = get_delays(channels, antennas, options)
+  
+arguments
+  channels                                                                                                                      % lsit of channels
+  antennas                                                                                                                          % list of antenna locations
+  options.relative_permittivity {mustBeNumeric, mustBeScalarOrEmpty, mustBeGreaterThanOrEqual(options.relative_permittivity,1)}     % relative permittivity must be a nummeric scaler >= 1
+end
   c_0 = 299792458;
-  p = inputParser;
-  addOptional(p, 'relative_permittivity', 1, @(a) isnumeric(a) && isscalar(a) && a >= 1);
-  parse(p, varargin{:});
-  relative_permittivity = p.Results.relative_permittivity;
+  relative_permittivity = options.relative_permittivity;
 
   speed = c_0./sqrt(relative_permittivity);
 

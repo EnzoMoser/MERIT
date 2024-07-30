@@ -112,7 +112,7 @@ antenna_locations = permute ( [ ( cos(antenna_angles) * sig_rad ); ( sin(antenna
 
 roi_rad = 8e-2; % The radius of information is 8cm.
 
-m_size = 150;
+m_size = 250;
 %Define the x/y points on each axis
 xs = linspace(-roi_rad, roi_rad, m_size);
 ys = linspace(roi_rad, -roi_rad, m_size);
