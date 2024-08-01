@@ -27,10 +27,18 @@ metadataFieldName = fieldnames(metadata);
 metadata = getfield(metadata, metadataFieldName{1}); %#ok<GFLD>
 
 % Signal data
-scan_data = load('../um_bmid/datasets/gen-three/clean/fd_data_s11_adi.mat');
+scan_data11 = load('../um_bmid/datasets/gen-three/clean/fd_data_s11_adi.mat');
 % Extract the data array from the struct dtype it is stored in
-scanDataFieldName = fieldnames(scan_data);
-scan_data = getfield(scan_data, scanDataFieldName{1}); %#ok<GFLD>
+scanDataFieldName = fieldnames(scan_data11);
+scan_data11 = getfield(scan_data11, scanDataFieldName{1}); %#ok<GFLD>
+
+% Signal data
+scan_data21 = load('../um_bmid/datasets/gen-three/clean/fd_data_s21_adi.mat');
+% Extract the data array from the struct dtype it is stored in
+scanDataFieldName = fieldnames(scan_data21);
+scan_data21 = getfield(scan_data21, scanDataFieldName{1}); %#ok<GFLD>
+
+scan_data = scan_data11;
 
 %% Setup frequencies
 frequencies = linspace( 1e9, 9e9, size(scan_data, 2) ); % Frequencies
@@ -70,21 +78,21 @@ adi_coords = [ org_metadata.adi_x, org_metadata.adi_y ] * 1e-2;
 split_adi_id = strsplit(org_metadata.phant_id, 'F'); % Split the string after every "F". This will tell us the adi ID
 adi_rad = ADI_RADS.(split_adi_id{1}); % Radius of the adi-pose. For some reason, it is not included in the metadata.
 
-%% Plot the signal
-figure;
-data_channel1 = [ org_signal(:, 1) ] ;
-channel1_magnitude = mag2db(abs(data_channel1));
-channel1_phase = unwrap(angle(data_channel1));
-subplot(2, 1, 1);
-plot(frequencies, channel1_magnitude);
-xlabel('Frequency (Hz)');
-ylabel('Magnitude (dB)');
-legend('clean signal');
-subplot(2, 1, 2);
-plot(frequencies, channel1_phase);
-xlabel('Frequency (Hz)');
-ylabel('Phase (rad)');
-legend('clean signal');
+% %% Plot the signal
+% figure;
+% data_channel1 = [ org_signal(:, 1) ] ;
+% channel1_magnitude = mag2db(abs(data_channel1));
+% channel1_phase = unwrap(angle(data_channel1));
+% subplot(2, 1, 1);
+% plot(frequencies, channel1_magnitude);
+% xlabel('Frequency (Hz)');
+% ylabel('Magnitude (dB)');
+% legend('clean signal');
+% subplot(2, 1, 2);
+% plot(frequencies, channel1_phase);
+% xlabel('Frequency (Hz)');
+% ylabel('Phase (rad)');
+% legend('clean signal');
 
 %% Calculate signal speed
 prop_speed = um_bmid.get_signal_speed(...
@@ -121,37 +129,61 @@ pix_dist_from_center = sqrt(pix_xs.^2 + pix_ys.^2);
 % circle-of-interest
 in_roi = false([m_size, m_size]);
 in_roi(pix_dist_from_center < roi_rad) = true;
+% Generate imaging domain
+[points, axes_,] = merit.domain.get_pix_xys(m_size, roi_rad);
 
-%% Calculate time delay for each signal at each point
+% delays = merit.beamform.get_delays(channels, antenna_locations(:, 1:2), ...
+%   relative_permittivity=1.0802);
+
+function [y] = get_delays(prop_speed, m_size, pix_xs, pix_ys, antenna_locations, axes_)
+
 pixel_delay_time = um_bmid.get_delays(prop_speed, m_size, pix_xs, pix_ys, antenna_locations);
+xs = axes_{1};
+ys = axes_{2};
 
-%% Calculate phase factor
-pix_ts = pixel_delay_time;
-phase_fac = exp(-2i * pi * frequencies(:) .* reshape(pix_ts, 1, size(pix_ts, 1), size(pix_ts, 2), size(pix_ts, 3)));
+function [x] = calculate_(list_points)
+    positions = zeros(size(list_points));
+    
+    for i = 1:size(list_points, 1)
+        lx = list_points(i, 1);
+        ly = list_points(i, 2);
+        
+        % Find the index in all_points that matches (x, y)
+        [~, idx] = ismember(lx, xs);
+        [~, idy] = ismember(ly, ys);
+        
+        if ~isempty(idx) & ~isempty(idy)
+            % If found, store the position
+            positions(i, :) = [idx, idy];
+        else
+            error("What")
+        end
+    end
+    positions = permute(positions, [2,1]);
 
-%% Perform DAS beamform
-% Convert adi_cal_cropped to have singleton dimensions for broadcasting
-adi_cal_cropped_expanded = reshape(org_signal, size(org_signal, 1), size(org_signal, 2), 1, 1);
-% Perform the element-wise multiplication and summation using implicit expansion
-das_adi_recon = sum(sum(adi_cal_cropped_expanded .* phase_fac.^2, 1), 2);
-% Squeeze the result to remove singleton dimensions
-das_adi_recon = squeeze(das_adi_recon);
+    x = zeros(1, size(pixel_delay_time, 1), size(positions, 2));
+    for i = 1:size(positions, 2)
+        x(1, :, i) = squeeze(pixel_delay_time(:, positions(1, i), positions(2, i)));
+    end
+end
 
-%% Plot image
-img = abs(das_adi_recon);
-img_to_plt = img .* ones(size(img), "like", img);
-% Set the pixels outside the antenna trajectory to NaN
-img_to_plt( ~in_roi ) = nan;
-% Bounds for x/y axes ticks in plt
-tick_bounds = [-roi_rad, roi_rad, -roi_rad, roi_rad];
+y = @calculate_;
 
-figure()  % Make the figure window
+end
+
+delays = get_delays(prop_speed, m_size, pix_xs, pix_ys, antenna_locations, axes_);
+
+% Perform imaging
+img = abs(merit.beamform(org_signal, frequencies, points, delays, ...
+        merit.beamformers.DAS));
+
+% Convert to grid for image display
+grid_ = merit.domain.img2grid(img, points, axes_{:});
+
+figure()
 hold on
+imagesc(axes_{:}, grid_);
 
-axes_{1} = xs;
-axes_{2} = ys;
-
-imagesc(axes_{:}, img_to_plt);
 colormap("jet");
 colorbar
 axis equal
