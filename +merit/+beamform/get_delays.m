@@ -1,5 +1,4 @@
 function [calculate_time] = get_delays(channels, antennas, options)
-  
 arguments
   channels                                                                                                                      % lsit of channels
   antennas                                                                                                                          % list of antenna locations
@@ -12,10 +11,9 @@ end
 
   antennas = antennas';
   
-  function [time] = calculate_(points)
-    points = permute(points, [2, 3, 1]);
+  function [time] = calculate_(pointsf)
+    points = permute(pointsf, [2, 3, 1]);
     distances = sqrt(sum( (antennas - points).^2, 1) );
-
     time = - ( distances(:, channels(:, 1), :) + distances(:, channels(:, 2), :) ) / speed;
   end
   calculate_time = @calculate_;

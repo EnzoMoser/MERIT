@@ -7,7 +7,7 @@ ys = -xs;  % create an array for circle radius roi_rho with resoultion of m_size
 
 
 %% create matrix grid from x and y values
-[x_dists, y_dists] = meshgrid(xs); 
+[x_dists, y_dists] = meshgrid(xs, ys); 
 axes_ = {xs, ys};
 
 area_ = x_dists.^2 + y_dists.^2 <= roi_rho.^2;

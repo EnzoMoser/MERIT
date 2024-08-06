@@ -24,9 +24,9 @@ for a_pos = 1:number_antennas  % For each antenna position
     p_ds(a_pos, :, :) = sqrt(x_diffs.^2 + y_diffs.^2);
 end
 
-pixel_delay_time = p_ds ./ prop_speed; % Convert distance delay to time delay, relative to permittivity.
+pixel_delay_time = p_ds ./ prop_speed; % Convert distance delay to time delay.
 
 % Apply extra time delay for monostatic. Constant taken from Reimer.
-%pixel_delay_time = pixel_delay_time + 0.19e-9;
+pixel_delay_time = pixel_delay_time + 0.19e-9;
 pixel_delay_time = -pixel_delay_time;
 end

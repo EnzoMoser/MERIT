@@ -1,4 +1,3 @@
-clear
 clc
 
 m_size = 50;
@@ -78,22 +77,6 @@ adi_coords = [ org_metadata.adi_x, org_metadata.adi_y ] * 1e-2;
 split_adi_id = strsplit(org_metadata.phant_id, 'F'); % Split the string after every "F". This will tell us the adi ID
 adi_rad = ADI_RADS.(split_adi_id{1}); % Radius of the adi-pose. For some reason, it is not included in the metadata.
 
-% %% Plot the signal
-% figure;
-% data_channel1 = [ org_signal(:, 1) ] ;
-% channel1_magnitude = mag2db(abs(data_channel1));
-% channel1_phase = unwrap(angle(data_channel1));
-% subplot(2, 1, 1);
-% plot(frequencies, channel1_magnitude);
-% xlabel('Frequency (Hz)');
-% ylabel('Magnitude (dB)');
-% legend('clean signal');
-% subplot(2, 1, 2);
-% plot(frequencies, channel1_phase);
-% xlabel('Frequency (Hz)');
-% ylabel('Phase (rad)');
-% legend('clean signal');
-
 %% Calculate signal speed
 prop_speed = um_bmid.get_signal_speed(...
     ant_phase_rad, ...
@@ -132,9 +115,6 @@ in_roi(pix_dist_from_center < roi_rad) = true;
 % Generate imaging domain
 [points, axes_,] = merit.domain.get_pix_xys(m_size, roi_rad);
 
-% delays = merit.beamform.get_delays(channels, antenna_locations(:, 1:2), ...
-%   relative_permittivity=1.0802);
-
 function [y] = get_delays(prop_speed, m_size, pix_xs, pix_ys, antenna_locations, axes_)
 
 pixel_delay_time = um_bmid.get_delays(prop_speed, m_size, pix_xs, pix_ys, antenna_locations);
@@ -143,15 +123,15 @@ ys = axes_{2};
 
 function [x] = calculate_(list_points)
     positions = zeros(size(list_points));
-    
+
     for i = 1:size(list_points, 1)
         lx = list_points(i, 1);
         ly = list_points(i, 2);
-        
+
         % Find the index in all_points that matches (x, y)
         [~, idx] = ismember(lx, xs);
         [~, idy] = ismember(ly, ys);
-        
+
         if ~isempty(idx) & ~isempty(idy)
             % If found, store the position
             positions(i, :) = [idx, idy];
@@ -171,11 +151,36 @@ y = @calculate_;
 
 end
 
-delays = get_delays(prop_speed, m_size, pix_xs, pix_ys, antenna_locations, axes_);
+channels = permute([1:72; 1:72], [2, 1]);
+
+delays = merit.beamform.get_delays(channels, antenna_locations(:, 1:2), ...
+  relative_permittivity=1.0802);
 
 % Perform imaging
 img = abs(merit.beamform(org_signal, frequencies, points, delays, ...
         merit.beamformers.DAS));
+
+% Convert to grid for image display
+grid_ = merit.domain.img2grid(img, points, axes_{:});
+
+figure()
+hold on
+imagesc(axes_{:}, grid_);
+
+colormap("jet");
+colorbar
+axis equal
+hold off
+
+zz_M = squeeze(delays(points(1:2, :)));
+
+delays = get_delays(prop_speed, m_size, pix_xs, pix_ys, antenna_locations(:, 1:2), axes_);
+
+zz_R = squeeze(delays(points(1:2, :)));
+
+% Perform imaging
+img = abs(merit.beamform(org_signal, frequencies, points, delays, ...
+        um_bmid.DAS));
 
 % Convert to grid for image display
 grid_ = merit.domain.img2grid(img, points, axes_{:});
