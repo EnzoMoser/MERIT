@@ -131,23 +131,12 @@ phase_fac = exp(-2i * pi * frequencies(:) .* reshape(pix_ts, 1, size(pix_ts, 1),
 
 %% Perform DAS beamform
 % Convert adi_cal_cropped to have singleton dimensions for broadcasting
-adi_cal_cropped_expanded = reshape(org_signal, size(org_signal, 1), size(org_signal, 2), 1, 1); %org_signal;
+adi_cal_cropped_expanded = org_signal;
 % Perform the element-wise multiplication and summation using implicit expansion
 das_adi_recon_temp1 = adi_cal_cropped_expanded .* phase_fac.^2;
-% das_adi_recon_temp2 = merit.process.delay(org_signal, permute(pix_ts, [4, 1, 2, 3]), frequencies(:));
 das_adi_recon = sum(sum(das_adi_recon_temp1, 1), 2);
 % Squeeze the result to remove singleton dimensions
 das_adi_recon = squeeze(das_adi_recon);
-
-%% Perform Merit das
-function [x] = get_new_delays(delay_times)
-
-    function [times] = new_delays(points)
-       times = reshape(delay_times, 1, size(delay_times, 1), [] );
-       times = 2 * times(:, :, points);
-    end
-    x = @new_delays;
-end
 
 % Apply extra time delay for monostatic. Constant taken from Reimer.
 delays = merit.beamform.get_delays([1:72; 1:72]', antenna_locations, relative_permittivity=( 299792458 ./ prop_speed ).^2 );
