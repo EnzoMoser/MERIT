@@ -68,7 +68,7 @@ end
 
 %--- Get breast adipose
 adi_coords = [ org_metadata.adi_x, org_metadata.adi_y ] * 1e-2;
-split_adi_id = strsplit(org_metadata.phant_id, 'F'); % Split the string after every "F". This will tell us the adi ID
+split_adi_id = strsplit(org_metadata.phant_id, 'F'); % Split the string after every "F". This will give us the adipose ID
 adi_rad = ADI_RADS.(split_adi_id{1}); % Radius of the adi-pose. For some reason, it is not included in the metadata.
 
 %% Calculate signal speed
@@ -90,101 +90,33 @@ antenna_locations = um_bmid.get_antenna_locations(...
     starting_antenna_angle=starting_antenna_angle...
     );
 
-%% Create meshgrid for calculations
-%Define the x/y points on each axis
-xs = linspace(-roi_rad, roi_rad, m_size);
-ys = linspace(roi_rad, -roi_rad, m_size);
-% Cast these to 2D for ease
-[ pix_xs, pix_ys ] = meshgrid(xs, ys);
+%% Calculate delays
+c_0 = 299792458; % Vaccuum speed, taken from "merit.beamform.get_delays.m"
+delays_temp = merit.beamform.get_delays([1:number_antennas; 1:number_antennas]', antenna_locations, relative_permittivity=( c_0 ./ prop_speed ).^2 );
 
-% Find the distance from each pixel to the center of the model space
-pix_dist_from_center = sqrt(pix_xs.^2 + pix_ys.^2);
+delay_constant = 0.19e-9; % Apply extra time delay for monostatic. Constant taken from Reimer.
 
-%% Calculate region of interest
-% Get the region of interest as all the pixels inside the
-% circle-of-interest
-in_roi = false([m_size, m_size]);
-in_roi(pix_dist_from_center < roi_rad) = true;
-
-%% Calculate time delay for each signal at each point
-pixel_delay_time = um_bmid.get_delays(prop_speed, m_size, pix_xs, pix_ys, antenna_locations);
-
-%% Calculate phase factor
-pix_ts = pixel_delay_time;
-phase_fac = exp(-2i * pi * frequencies(:) .* reshape(pix_ts, 1, size(pix_ts, 1), size(pix_ts, 2), size(pix_ts, 3)));
-
-%% Perform DAS beamform
-% Convert adi_cal_cropped to have singleton dimensions for broadcasting
-adi_cal_cropped_expanded = org_signal;
-
-% Perform the element-wise multiplication and summation using implicit expansion
-das_adi_recon_temp1 = adi_cal_cropped_expanded .* phase_fac.^2;
-das_adi_recon = sum(sum(das_adi_recon_temp1, 1), 2);
-
-% Squeeze the result to remove singleton dimensions
-das_adi_recon = squeeze(das_adi_recon);
-
-% Apply extra time delay for monostatic. Constant taken from Reimer.
-delays = merit.beamform.get_delays([1:72; 1:72]', antenna_locations, relative_permittivity=( 299792458 ./ prop_speed ).^2 );
-
-apple = @(ps) delays(ps) - 2*(0.19e-9);
+% Apply the delay constant. It must be doubled as it is applied for the...
+%... distance to send and the distance to receive.
+delays = @(points) delays_temp(points) - 2*(delay_constant);
 
 % Generate imaging domain
-[points, axes_] = merit.domain.get_pix_xys(m_size, roi_rad);
+[points, axes_] = um_bmid.get_pix_xys(m_size, roi_rad);
 
-new_pix_ts = apple(points);
+% Create image
+img = abs(merit.beamform(org_signal, frequencies(:), points, delays, um_bmid.DAS));
 
-new_das = merit.beamform(org_signal, frequencies(:), points, apple, um_bmid.DAS);
+% For some reason, the image is actually flipped. So we must flip it back to normal:
+img = flip(img);
 
-% Convert to grid for image display
-grid_ = merit.domain.img2grid(squeeze(abs(new_das)), points, axes_{:});
+% Convert the image to grid
+grid_ = merit.domain.img2grid(img, points, axes_{:});
 
+%% Display image
 figure()
-imagesc(axes_{:}, rot90(grid_, 2));
+imagesc(axes_{:}, grid_);
 axis equal
 colormap("jet");
 colorbar
-% Matlab likes to display the Y Direction backwards. So we tell it not to:
+% Matlab likes to display the Y-Direction backwards. So we tell it not to:
 set(gca,'YDir','normal'); set(gca,'XDir','normal');
-
-figure()
-imagesc(axes_{:}, squeeze(abs(das_adi_recon)) );
-axis equal
-colormap("jet");
-colorbar
-% Matlab likes to display the Y Direction backwards. So we tell it not to:
-set(gca,'YDir','normal'); set(gca,'XDir','normal');
-
-%% Plot image
-img = rot90(grid_, 2);
-img_to_plt = img .* ones(size(img), "like", img);
-% Set the pixels outside the antenna trajectory to NaN
-img_to_plt( ~in_roi ) = nan;
-
-figure()  % Make the figure window
-hold on
-
-imagesc(axes_{:}, img_to_plt);
-colormap("jet");
-colorbar
-title("merit")
-axis equal
-lims = clim;
-hold off
-
-%% Plot image
-img = squeeze(abs(das_adi_recon));
-img_to_plt = img .* ones(size(img), "like", img);
-% Set the pixels outside the antenna trajectory to NaN
-img_to_plt( ~in_roi ) = nan;
-
-figure()  % Make the figure window
-hold on
-
-imagesc(axes_{:}, img_to_plt);
-colormap("jet");
-colorbar
-title("reimer")
-axis equal
-% clim(lims)
-hold off
