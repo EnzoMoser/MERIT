@@ -1,4 +1,4 @@
-classdef test_beamform < matlab.unittest.TestCase;
+classdef test_beamform < matlab.unittest.TestCase
   properties
   end
 
@@ -10,7 +10,7 @@ classdef test_beamform < matlab.unittest.TestCase;
   end
 
   methods (Test)
-    function [] = test_basic(testCase),
+    function [] = test_basic(testCase)
       location = [0, 15e-3]; % theta, rho
 
       [data, frequencies, channels, antenna_locations] = get_data();
@@ -20,7 +20,7 @@ classdef test_beamform < matlab.unittest.TestCase;
       [pulse_td, pulse_fd] = DG(3e9, 1/3e9, time_axis, frequencies);
       signals = single(merit.process.shape(data, pulse_fd, frequencies, time_axis));
 
-      delay_func = merit.beamform.get_delays(channels, antenna_locations, relative_permittivity=8);
+      delay_func = merit.beamform.get_delays(channels, antenna_locations, 8);
 
       img = merit.beamform(signals, time_axis, points, delay_func, merit.beamformers.DAS, window= merit.beamform.windows.rectangular(150));
       [~, i] = max(img);
@@ -31,7 +31,7 @@ classdef test_beamform < matlab.unittest.TestCase;
       testCase.verifyLessThan(abs(r-location(2)), 5e-3);
     end
 
-    function [] = test_basic_fd(testCase),
+    function [] = test_basic_fd(testCase)
       location = [0, 15e-3]; % theta, rho
       [data, frequencies, channels, antenna_locations] = get_data();
       [points, axes_] = merit.domain.hemisphere(radius=7e-2, resolution=2.5e-3);
@@ -40,7 +40,7 @@ classdef test_beamform < matlab.unittest.TestCase;
       data = single(data(F, :));
       frequencies = frequencies(F);
 
-      delay_func = merit.beamform.get_delays(channels, antenna_locations, relative_permittivity=8);
+      delay_func = merit.beamform.get_delays(channels, antenna_locations, 8);
 
       img = abs(merit.beamform(data, frequencies, points, delay_func, merit.beamformers.DAS));
       [~, i] = max(img);

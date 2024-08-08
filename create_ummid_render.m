@@ -113,7 +113,8 @@ delays = @(points) delays_temp(points) - 2*(delay_constant);
 %{
 Create DAS beamform function.
 We must use a DAS different from MERIT.
-This one does not perform ".^2" on the first summation.
+This version does not perform element-wise squaring after the first
+summation.
 %}
 function [process_signals] = DAS()
   % Assumes window x channel x points x ...
@@ -122,7 +123,6 @@ function [process_signals] = DAS()
   end
   process_signals = @process_;
 end
-
 
 % Create image
 img = abs(merit.beamform(org_signal, frequencies(:), points, delays, DAS));

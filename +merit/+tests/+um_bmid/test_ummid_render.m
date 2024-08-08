@@ -1,0 +1,78 @@
+classdef test_ummid_render < matlab.unittest.TestCase
+%{
+- Test to verify that the MERIT DAS beamforming of the gen-three UM-BMID scans is
+equivalent to the beamformed data taken from the following commit:
+
+https://github.com/TysonReimer/ORR-EPM/blob/5680df25fae9a3ee0ff3fd0fbb238694efc39a11/run/reconstruct_imgs.py
+
+- Inside the private folder located beside this function is a bash script.
+- Execute the bash script and follow its instructions to prepare
+"reconstruct_imgs.py" for use here.
+- Run "reconstruct_imgs.py".
+- Change the directory listed below in proporties to match the location of
+the newly generated ".pickle" file.
+%}
+properties
+    % The location of the pickle file containing all the data.
+    pickle_path = '../orr_epm/output/gen-three/base-median-adi-rads/das_adi.pickle';
+    %{
+    The tolerance percentage for the maximum difference between the MERIT
+    beamformed scan and the ORR-EPM beamformed scan.
+    If the difference is higher than the tolerance level, this test fails.
+    %}
+    tolerance_percentage = 0.15;
+end
+
+methods(Test)
+function verify_ummid_func(testCase)
+
+% If there is no .pickle file, complain and fail.
+testCase.verifyTrue(isfile(testCase.pickle_path))
+
+% Grab the pickle data from the file
+fh = py.open(testCase.pickle_path, 'rb');
+py_data = py.pickle.load(fh);
+fh.close();
+
+%{
+Find the number of adi scans.
+This script assumes that the adi scans are in the exact same order as the
+adi scans in the clean folder.
+%}
+number_of_scans = size(py_data, 2);
+
+% Get the first scan
+first = abs(double(py_data{1}));
+
+m_size = size(first, 1);
+
+ref_data = zeros(number_of_scans, m_size, m_size);
+ref_data(1, :, :) = first;
+
+if number_of_scans > 1
+    for num = 2:number_of_scans
+        ref_data(num, :, :) = abs(double(py_data{num}));
+    end
+end
+
+merit_data = verify_ummid_render(number_of_scans, m_size, pwd);
+
+nan_map = isnan(squeeze(merit_data(1, :, :)));
+ref_data(:, nan_map) = nan;
+
+diff = abs(merit_data - ref_data);
+[max_diff, idx] = max(diff, [], "all");
+
+ref_s = ref_data(idx);
+merit_s = merit_data(idx);
+
+if ref_s > merit_s
+    diff_percent = max_diff / ref_s;
+else
+    diff_percent = max_diff / merit_s;
+end
+
+testCase.verifyLessThanOrEqual(diff_percent, testCase.tolerance_percentage)
+end
+end
+end
