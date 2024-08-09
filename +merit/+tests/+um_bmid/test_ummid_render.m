@@ -5,7 +5,7 @@ equivalent to the beamformed data taken from the following commit:
 
 https://github.com/TysonReimer/ORR-EPM/blob/5680df25fae9a3ee0ff3fd0fbb238694efc39a11/run/reconstruct_imgs.py
 
-- Inside the private folder located beside this function is a bash script.
+- Inside the "private/" folder located in this folder function is a bash script.
 - Execute the bash script and follow its instructions to prepare
 "reconstruct_imgs.py" for use here.
 - Run "reconstruct_imgs.py".
@@ -13,7 +13,9 @@ https://github.com/TysonReimer/ORR-EPM/blob/5680df25fae9a3ee0ff3fd0fbb238694efc3
 the newly generated ".pickle" file.
 %}
 properties
-    % The location of the pickle file containing all the data.
+    % The directory containing the um_bmid dataset
+    um_bmid_dir = '../um_bmid/datasets/';
+    % The location of the pickle file containing the beamformed data.
     pickle_path = '../orr_epm/output/gen-three/base-median-adi-rads/das_adi.pickle';
     %{
     The tolerance percentage for the maximum difference between the MERIT
@@ -21,6 +23,11 @@ properties
     If the difference is higher than the tolerance level, this test fails.
     %}
     tolerance_percentage = 0.15;
+
+    % The directoy within the dataset for "gen-three clean"
+    gen_three_clean_dir = '/gen-three/clean/';
+    md_data = 'fd_data_s11_adi.mat';
+    scan_data = 'md_list_s11_adi.mat';
 end
 
 methods(Test)
@@ -55,7 +62,10 @@ if number_of_scans > 1
     end
 end
 
-merit_data = verify_ummid_render(number_of_scans, m_size, pwd);
+scan_dir = fullfile(pwd, testCase.um_bmid_dir, testCase.gen_three_clean_dir, testCase.scan_data);
+md_dir = fullfile(pwd, testCase.um_bmid_dir, testCase.gen_three_clean_dir, testCase.md_data);
+
+merit_data = verify_ummid_render(number_of_scans, m_size, pwd, scan_dir, md_dir);
 
 nan_map = isnan(squeeze(merit_data(1, :, :)));
 ref_data(:, nan_map) = nan;

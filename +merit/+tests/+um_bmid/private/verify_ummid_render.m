@@ -1,8 +1,10 @@
-function merit_data = verify_ummid_render(number_of_scans, m_size, pwd_path)
+function merit_data = verify_ummid_render(number_of_scans, m_size, pwd_path, scan_dir, md_dir)
 arguments
     number_of_scans {mustBeInteger, mustBePositive}
     m_size {mustBeInteger, mustBePositive}
     pwd_path
+    scan_dir
+    md_dir
 end
 % Add the main directory to this scripts path
 cd(pwd_path);
@@ -25,13 +27,13 @@ roi_rad = 8e-2; % The radius of information is 8cm.
 %--- Metadata
 % Warning: All values in the metadata are in centimetres!!!
 % Make sure to convert them to metres when using.
-metadata = load(fullfile(pwd_path, '../um_bmid/datasets/gen-three/clean/md_list_s11_adi.mat'));
+metadata = load(scan_dir);
 % Extract the metadata array from the struct dytpe it is stored in
 metadataFieldName = fieldnames(metadata);
 metadata = getfield(metadata, metadataFieldName{1}); %#ok<GFLD>
 
 %--- Signal data
-scan_data = load(fullfile(pwd_path, '../um_bmid/datasets/gen-three/clean/fd_data_s11_adi.mat'));
+scan_data = load(md_dir);
 % Extract the data array from the struct dtype it is stored in
 scanDataFieldName = fieldnames(scan_data);
 scan_data = getfield(scan_data, scanDataFieldName{1}); %#ok<GFLD>
