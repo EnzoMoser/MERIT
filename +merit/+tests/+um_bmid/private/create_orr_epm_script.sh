@@ -6,14 +6,17 @@ The ORR-EPM repo works with the current Python, but not the current Numpy packag
 This script was tested with this commit:
 https://github.com/TysonReimer/ORR-EPM/tree/5680df25fae9a3ee0ff3fd0fbb238694efc39a11
 
-The link to the scan data is in a google drive located in the ReadMe of this repo:
+The script is designed to accept the following file as an argument:
+'ORR-EPM/run/reconstruct_imgs.py'
+
+For running the ORR-EPM repo, you need the scan data. The link to the scan data is in a google drive located in the ReadMe of this repo:
 https://github.com/UManitoba-BMS/UM-BMID/tree/62c97b8c75f96b275a11f4cb920f03d185f7e0c5
 "
 set -eo pipefail # Exit if any command fails. Print command.
 
 # Check if an argument was provided
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 <file>"
+    echo -e "WARNING! No argument provided! Please read the source code.\nPlease provide the location of 'reconstruct_imgs.py' next time you run this command."
     exit 1
 fi
 
